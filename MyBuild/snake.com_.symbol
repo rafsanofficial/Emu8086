@@ -1,0 +1,25 @@
+< THE SYMBOL TABLE >  snake.com_  --  emu8086 assembler version: 4.08 
+===================================================================================================
+Name                     	Offset    	Size      	Type      	Segment   
+===================================================================================================
+SNAKE                    	00103     	2         	VAR       	(NOSEG)   
+TAIL                     	00111     	2         	VAR       	(NOSEG)   
+CUR_DIR                  	00113     	1         	VAR       	(NOSEG)   
+WAIT_TIME                	00114     	2         	VAR       	(NOSEG)   
+MSG                      	00116     	1         	VAR       	(NOSEG)   
+START                    	001B5     	-1        	LABEL     	(NOSEG)   
+GAME_LOOP                	001C8     	-1        	LABEL     	(NOSEG)   
+CHECK_FOR_KEY            	001FD     	-1        	LABEL     	(NOSEG)   
+NO_KEY                   	0020F     	-1        	LABEL     	(NOSEG)   
+STOP_GAME                	00222     	-1        	LABEL     	(NOSEG)   
+MOVE_SNAKE               	0022B     	-1        	NEAR      	(NOSEG)   
+MOVE_ARRAY               	00236     	-1        	LABEL     	(NOSEG)   
+MOVE_LEFT                	00261     	-1        	LABEL     	(NOSEG)   
+MOVE_RIGHT               	0027B     	-1        	LABEL     	(NOSEG)   
+MOVE_UP                  	00293     	-1        	LABEL     	(NOSEG)   
+MOVE_DOWN                	002AB     	-1        	LABEL     	(NOSEG)   
+STOP_MOVE                	002C3     	-1        	LABEL     	(NOSEG)   
+===================================================================================================
+[ 2020-11-19  --  12:06:46 AM ] 
+< END >
+ 

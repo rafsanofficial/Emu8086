@@ -1,0 +1,273 @@
+EMU8086 GENERATED LISTING. MACHINE CODE <- SOURCE.
+ 
+snake.com_ -- emu8086 assembler version: 4.08  
+ 
+[ 2020-11-19  --  12:06:46 AM ] 
+ 
+===================================================================================================
+[LINE]     LOC: MACHINE CODE                          SOURCE
+===================================================================================================
+ 
+[   1]        :                                       ; Control the snake using arrow keys.
+[   2]        :                                       ;
+[   3]        :                                       ; Any other keys stop the snake.
+[   4]        :                                       ;
+[   5]        :                                       ; Press Esc to exit.
+[   6]        :                                       
+[   7]        :                                       
+[   8]        :                                       name "snake"
+[   9]        :                                       
+[  10]        :                                       org     100h
+[  11]        :                                       
+[  12]        :                                       ; jump over data section:
+[  13]    0100: E9 B2 00                              jmp     start
+[  14]        :                                       
+[  15]        :                                       ; ------ data section ------
+[  16]        :                                       
+[  17]        :                                       s_size  equ     7
+[  18]        :                                       
+[  19]        :                                       ; the snake coordinates
+[  20]        :                                       ; (from head to tail)
+[  21]        :                                       ; low byte is left, high byte
+[  22]        :                                       ; is top - [top, left]
+[  23]    0103: 00 00 00 00 00 00 00 00 00 00 00 00   snake dw s_size dup(0)
+                00 00                               
+[  24]        :                                       
+[  25]    0111: 00 00                                 tail    dw      ?
+[  26]        :                                       
+[  27]        :                                       ; direction constants
+[  28]        :                                       ;          (bios key codes):
+[  29]        :                                       left    equ     4bh
+[  30]        :                                       right   equ     4dh
+[  31]        :                                       up      equ     48h
+[  32]        :                                       down    equ     50h
+[  33]        :                                       
+[  34]        :                                       ; current snake direction:
+[  35]    0113: 4D                                    cur_dir db      right
+[  36]        :                                       
+[  37]    0114: 00 00                                 wait_time dw    0
+[  38]        :                                       
+[  39]        :                                       ; welcome message
+[  40]    0116: 3D 3D 3D 3D 20 48 6F 77 20 54 6F 20   msg 	db "==== How To Play ====", 0dh,0ah
+                50 6C 61 79 20 3D 3D 3D 3D 0D 0A    
+[  41]    012D: 43 6F 6E 74 72 6F 6C 20 74 68 65 20   	db "Control the snake using arrow keys", 0dh,0ah	
+                73 6E 61 6B 65 20 75 73 69 6E 67 20 
+                61 72 72 6F 77 20 6B 65 79 73 0D 0A 
+                                                    
+[  42]    0151: 41 6E 79 20 6F 74 68 65 72 20 6B 65   	db "Any other keys stop the snake.", 0dh,0ah, 0ah
+                79 73 20 73 74 6F 70 20 74 68 65 20 
+                73 6E 61 6B 65 2E 0D 0A 0A          
+[  43]    0172: 50 72 65 73 73 20 45 73 63 20 74 6F   	db "Press Esc to exit.", 0dh,0ah
+                20 65 78 69 74 2E 0D 0A             
+[  44]    0186: 3D 3D 3D 3D 3D 3D 3D 3D 3D 3D 3D 3D   	db "====================", 0dh,0ah, 0ah
+                3D 3D 3D 3D 3D 3D 3D 3D 0D 0A 0A    
+[  45]    019D: 50 72 65 73 73 20 61 6E 79 20 4B 65   	db "Press any Key to start!$"
+                79 20 74 6F 20 73 74 61 72 74 21 24 
+                                                    
+[  46]        :                                       
+[  47]        :                                       ; ------ code section ------
+[  48]        :                                       
+[  49]    01B5:                                       start:
+[  50]        :                                       
+[  51]        :                                       ; print welcome message:
+[  52]    01B5: BA 16 01                              mov dx, offset msg
+[  53]    01B8: B4 09                                 mov ah, 9
+[  54]    01BA: CD 21                                 int 21h
+[  55]        :                                       
+[  56]        :                                       
+[  57]        :                                       ; wait for any key:
+[  58]    01BC: B4 00                                 mov ah, 00h
+[  59]    01BE: CD 16                                 int 16h
+[  60]        :                                       
+[  61]        :                                       
+[  62]        :                                       ; hide text cursor:
+[  63]    01C0: B4 01                                 mov     ah, 1
+[  64]    01C2: B5 2B                                 mov     ch, 2bh
+[  65]    01C4: B1 0B                                 mov     cl, 0bh
+[  66]    01C6: CD 10                                 int     10h
+[  67]        :                                       
+[  68]        :                                       
+[  69]    01C8:                                       game_loop:
+[  70]        :                                       
+[  71]        :                                       ; === select first video page
+[  72]    01C8: B0 00                                 mov     al, 0  ; page number.
+[  73]    01CA: B4 05                                 mov     ah, 05h
+[  74]    01CC: CD 10                                 int     10h
+[  75]        :                                       
+[  76]        :                                       ; === show new head:
+[  77]    01CE: 8B 16 03 01                           mov     dx, snake[0]
+[  78]        :                                       
+[  79]        :                                       ; set cursor at dl,dh
+[  80]    01D2: B4 02                                 mov     ah, 02h
+[  81]    01D4: CD 10                                 int     10h
+[  82]        :                                       
+[  83]        :                                       ; print '*' at the location:
+[  84]    01D6: B0 2A                                 mov     al, '*'
+[  85]    01D8: B4 09                                 mov     ah, 09h
+[  86]    01DA: B3 0E                                 mov     bl, 0eh ; attribute.
+[  87]    01DC: B9 01 00                              mov     cx, 1   ; single char.
+[  88]    01DF: CD 10                                 int     10h
+[  89]        :                                       
+[  90]        :                                       ; === keep the tail:
+[  91]    01E1: A1 0F 01                              mov     ax, snake[s_size * 2 - 2]
+[  92]    01E4: A3 11 01                              mov     tail, ax
+[  93]        :                                       
+[  94]    01E7: E8 41 00                              call    move_snake
+[  95]        :                                       
+[  96]        :                                       
+[  97]        :                                       ; === hide old tail:
+[  98]    01EA: 8B 16 11 01                           mov     dx, tail
+[  99]        :                                       
+[ 100]        :                                       ; set cursor at dl,dh
+[ 101]    01EE: B4 02                                 mov     ah, 02h
+[ 102]    01F0: CD 10                                 int     10h
+[ 103]        :                                       
+[ 104]        :                                       ; print ' ' at the location:
+[ 105]    01F2: B0 20                                 mov     al, ' '
+[ 106]    01F4: B4 09                                 mov     ah, 09h
+[ 107]    01F6: B3 0E                                 mov     bl, 0eh ; attribute.
+[ 108]    01F8: B9 01 00                              mov     cx, 1   ; single char.
+[ 109]    01FB: CD 10                                 int     10h
+[ 110]        :                                       
+[ 111]        :                                       
+[ 112]        :                                       
+[ 113]    01FD:                                       check_for_key:
+[ 114]        :                                       
+[ 115]        :                                       ; === check for player commands:
+[ 116]    01FD: B4 01                                 mov     ah, 01h
+[ 117]    01FF: CD 16                                 int     16h
+[ 118]    0201: 74 0C                                 jz      no_key
+[ 119]        :                                       
+[ 120]    0203: B4 00                                 mov     ah, 00h
+[ 121]    0205: CD 16                                 int     16h
+[ 122]        :                                       
+[ 123]    0207: 3C 1B                                 cmp     al, 1bh    ; esc - key?
+[ 124]    0209: 74 17                                 je      stop_game  ;
+[ 125]        :                                       
+[ 126]    020B: 88 26 13 01                           mov     cur_dir, ah
+[ 127]        :                                       
+[ 128]    020F:                                       no_key:
+[ 129]        :                                       
+[ 130]        :                                       
+[ 131]        :                                       
+[ 132]        :                                       ; === wait a few moments here:
+[ 133]        :                                       ; get number of clock ticks
+[ 134]        :                                       ; (about 18 per second)
+[ 135]        :                                       ; since midnight into cx:dx
+[ 136]    020F: B4 00                                 mov     ah, 00h
+[ 137]    0211: CD 1A                                 int     1ah
+[ 138]    0213: 3B 16 14 01                           cmp     dx, wait_time
+[ 139]    0217: 72 E4                                 jb      check_for_key
+[ 140]    0219: 83 C2 04                              add     dx, 4
+[ 141]    021C: 89 16 14 01                           mov     wait_time, dx
+[ 142]        :                                       
+[ 143]        :                                       
+[ 144]        :                                       
+[ 145]        :                                       ; === eternal game loop:
+[ 146]    0220: EB A6                                 jmp     game_loop
+[ 147]        :                                       
+[ 148]        :                                       
+[ 149]    0222:                                       stop_game:
+[ 150]        :                                       
+[ 151]        :                                       ; show cursor back:
+[ 152]    0222: B4 01                                 mov     ah, 1
+[ 153]    0224: B5 0B                                 mov     ch, 0bh
+[ 154]    0226: B1 0B                                 mov     cl, 0bh
+[ 155]    0228: CD 10                                 int     10h
+[ 156]        :                                       
+[ 157]    022A: C3                                    ret
+[ 158]        :                                       
+[ 159]        :                                       ; ------ functions section ------
+[ 160]        :                                       
+[ 161]        :                                       ; this procedure creates the
+[ 162]        :                                       ; animation by moving all snake
+[ 163]        :                                       ; body parts one step to tail,
+[ 164]        :                                       ; the old tail goes away:
+[ 165]        :                                       ; [last part (tail)]-> goes away
+[ 166]        :                                       ; [part i] -> [part i+1]
+[ 167]        :                                       ; ....
+[ 168]        :                                       
+[ 169]    022B:                                       move_snake proc near
+[ 170]        :                                       
+[ 171]        :                                       ; set es to bios info segment:
+[ 172]    022B: B8 40 00                              mov     ax, 40h
+[ 173]    022E: 8E C0                                 mov     es, ax
+[ 174]        :                                       
+[ 175]        :                                       ; point di to tail
+[ 176]    0230: BF 0C 00                              mov   di, s_size * 2 - 2
+[ 177]        :                                       ; move all body parts
+[ 178]        :                                       ; (last one simply goes away)
+[ 179]    0233: B9 06 00                              mov   cx, s_size-1
+[ 180]    0236:                                       move_array:
+[ 181]    0236: 8B 85 01 01                           mov   ax, snake[di-2]
+[ 182]    023A: 89 85 03 01                           mov   snake[di], ax
+[ 183]    023E: 83 EF 02                              sub   di, 2
+[ 184]    0241: E2 F3                                 loop  move_array
+[ 185]        :                                       
+[ 186]        :                                       
+[ 187]    0243: 80 3E 13 01 4B                        cmp     cur_dir, left
+[ 188]    0248: 74 17                                 je    move_left
+[ 189]    024A: 80 3E 13 01 4D                        cmp     cur_dir, right
+[ 190]    024F: 74 2A                                 je    move_right
+[ 191]    0251: 80 3E 13 01 48                        cmp     cur_dir, up
+[ 192]    0256: 74 3B                                 je    move_up
+[ 193]    0258: 80 3E 13 01 50                        cmp     cur_dir, down
+[ 194]    025D: 74 4C                                 je    move_down
+[ 195]        :                                       
+[ 196]    025F: EB 62                                 jmp     stop_move       ; no direction.
+[ 197]        :                                       
+[ 198]        :                                       
+[ 199]    0261:                                       move_left:
+[ 200]    0261: 8A 06 03 01                           mov   al, b.snake[0]
+[ 201]    0265: FE C8                                 dec   al
+[ 202]    0267: 88 06 03 01                           mov   b.snake[0], al
+[ 203]    026B: 3C FF                                 cmp   al, -1
+[ 204]    026D: 75 54                                 jne   stop_move
+[ 205]    026F: 26 A0 4A 00                           mov   al, es:[4ah]    ; col number.
+[ 206]    0273: FE C8                                 dec   al
+[ 207]    0275: 88 06 03 01                           mov   b.snake[0], al  ; return to right.
+[ 208]    0279: EB 48                                 jmp   stop_move
+[ 209]        :                                       
+[ 210]    027B:                                       move_right:
+[ 211]    027B: 8A 06 03 01                           mov   al, b.snake[0]
+[ 212]    027F: FE C0                                 inc   al
+[ 213]    0281: 88 06 03 01                           mov   b.snake[0], al
+[ 214]    0285: 26 3A 06 4A 00                        cmp   al, es:[4ah]    ; col number.
+[ 215]    028A: 72 37                                 jb    stop_move
+[ 216]    028C: C6 06 03 01 00                        mov   b.snake[0], 0   ; return to left.
+[ 217]    0291: EB 30                                 jmp   stop_move
+[ 218]        :                                       
+[ 219]    0293:                                       move_up:
+[ 220]    0293: 8A 06 04 01                           mov   al, b.snake[1]
+[ 221]    0297: FE C8                                 dec   al
+[ 222]    0299: 88 06 04 01                           mov   b.snake[1], al
+[ 223]    029D: 3C FF                                 cmp   al, -1
+[ 224]    029F: 75 22                                 jne   stop_move
+[ 225]    02A1: 26 A0 84 00                           mov   al, es:[84h]    ; row number -1.
+[ 226]    02A5: 88 06 04 01                           mov   b.snake[1], al  ; return to bottom.
+[ 227]    02A9: EB 18                                 jmp   stop_move
+[ 228]        :                                       
+[ 229]    02AB:                                       move_down:
+[ 230]    02AB: 8A 06 04 01                           mov   al, b.snake[1]
+[ 231]    02AF: FE C0                                 inc   al
+[ 232]    02B1: 88 06 04 01                           mov   b.snake[1], al
+[ 233]    02B5: 26 3A 06 84 00                        cmp   al, es:[84h]    ; row number -1.
+[ 234]    02BA: 76 07                                 jbe   stop_move
+[ 235]    02BC: C6 06 04 01 00                        mov   b.snake[1], 0   ; return to top.
+[ 236]    02C1: EB 00                                 jmp   stop_move
+[ 237]        :                                       
+[ 238]    02C3:                                       stop_move:
+[ 239]    02C3: C3                                    ret
+[ 240]        :                                       move_snake endp
+[ 241]        :                                       
+[ 242]        :                                       
+[ 243]        :                                       
+[ 244]        :                                       
+ 
+===================================================================================================
+ 
+
+
+
+
+===================================================================================================
